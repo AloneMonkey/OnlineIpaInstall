@@ -1,0 +1,48 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <title>Online Ipa Install</title>
+  <style type="text/css">
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: gray;
+      padding: 5em 0;
+      font-weight: 100;
+    }
+    #app .name {
+      color: #555;
+      font-size: 1.6em;
+      font-weight: 500;
+      margin: 1em 0;
+    }
+    #app img {
+      width: 7.5em;
+      height: 7.5em;
+      border-radius: 20%;
+    }
+    #app .install {
+      background: #1788ff;
+      border-radius: 5em;
+      padding: 10px 5em;
+      font-size: 1em;
+      font-weight: 100;
+      color: #fff;
+      margin: 2em 0;
+    }
+    a:link,a:hover,a:visited,a:active{
+     text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+      <img src="{{ icon }}" alt="">
+      <div class="name">{{ name }}</div>
+      <div> {{ version }}(Build {{ build }}) - {{ size }}</div>
+      <a class="install" href="itms-services://?action=download-manifest&url={{ plisturl }}">一键安装</a>
+  </div>
+</body>
+</html>
