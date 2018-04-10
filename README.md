@@ -43,3 +43,8 @@ To https://github.com/AloneMonkey/OnlineIpaInstall.git
    5e1f254..917abb5  master -> master
 ➜  OnlineIpaInstall git:(master) open http://o9slcszsf.bkt.clouddn.com/NewT66y.html
 ```
+
+# issues
+
+Q: html文件上传失败
+A: 需要先实名认证才能上传html
