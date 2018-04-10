@@ -7,6 +7,7 @@
 import os
 import sys
 import re
+import json
 import plistlib
 import argparse
 import zipfile
@@ -16,24 +17,14 @@ from qiniu import Auth, put_file, etag
 import qiniu.config
 from jinja2 import Environment, FileSystemLoader 
 
-# 七牛云的key
-access_key = 'xxxx'
-secret_key = 'xxxx'
-
-# 七牛云配置
-bucket_name = 'xxxx'
-bucket_url = 'http://xxxx'
-
-# 本repo的地址
-repo_url = 'https://github.com/AloneMonkey/OnlineIpaInstall/git/raw/master/'
-
-q = Auth(access_key, secret_key)
-
+# Read user config file
 script_dir = os.path.dirname(os.path.realpath(__file__))
+user_config = os.path.join(script_dir, 'config', 'user.config')
 
-def write(path, data):
-    with open(path, 'wb') as out:
-        out.write(data)
+with open(user_config, 'r') as read:
+    config = json.load(read)  
+
+q = Auth(config['access_key'], config['secret_key'])
 
 def render_and_write(template_file, path, context):
     env = Environment(loader=FileSystemLoader(os.path.dirname(template_file)))
@@ -43,7 +34,8 @@ def render_and_write(template_file, path, context):
         print("Render returned None - skipping '%s'" % path)
         return
 
-    write(path, rendered_content.encode('utf-8').strip())
+    with open(path, 'wb') as out:
+        out.write(rendered_content.encode('utf-8').strip())
 
 def get_file_size(filePath):
     fsize = os.path.getsize(filePath)
@@ -125,11 +117,11 @@ class IPAParser(object):
 
 def upload_file_to_qiniu(file_path, file_name):
     print("[%s] uploading......" % file_name)
-    token = q.upload_token(bucket_name, file_name)
+    token = q.upload_token(config['bucket_name'], file_name)
     ret, _ = put_file(token, file_name, file_path)
     assert ret['key'] == file_name
     assert ret['hash'] == etag(file_path)
-    return os.path.join(bucket_url, ret['key'])
+    return os.path.join(config['bucket_url'], ret['key'])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ipa-upload-script (by AloneMonkey v1.0)')
@@ -147,7 +139,7 @@ if __name__ == '__main__':
     ipa_file_path = args.target 
 
     if not os.path.exists(ipa_file_path):
-        print("[%s] is not existed!")
+        print("[%s] is not existed!" % ipa_file_path)
         exit(failed_code)
 
     ipa_parser = IPAParser(ipa_file_path)
@@ -157,11 +149,11 @@ if __name__ == '__main__':
         sys.exit(failed_code)
 
     plist_root = ipa_parser.get_info_plist_data()
-    bundle_id = plist_root['CFBundleIdentifier']
-    bundle_version = plist_root['CFBundleShortVersionString']
-    bundle_version_build = plist_root['CFBundleVersion']
-    display_name = plist_root['CFBundleDisplayName']
-    executable_name = plist_root['CFBundleExecutable']
+    bundle_id = plist_root.get('CFBundleIdentifier')
+    bundle_version = plist_root.get('CFBundleShortVersionString')
+    bundle_version_build = plist_root.get('CFBundleVersion', 'build')
+    display_name = plist_root.get('CFBundleDisplayName') or plist_root.get('CFBundleName')
+    executable_name = plist_root.get('CFBundleExecutable')
 
     # upload ipa file
     upload_ipa_url = upload_file_to_qiniu(ipa_file_path, executable_name + ".ipa")
@@ -204,7 +196,7 @@ if __name__ == '__main__':
           'version' : bundle_version,
           'build' : bundle_version_build,
           'size' : get_file_size(ipa_file_path),
-          'plisturl' : os.path.join(repo_url, 'plists', plist_name)
+          'plisturl' : os.path.join(config['repo_url'], 'plists', plist_name)
         })
 
     html_url = upload_file_to_qiniu(write_html_path, html_name)
